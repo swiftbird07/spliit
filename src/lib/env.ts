@@ -26,6 +26,7 @@ const envSchema = z
     S3_UPLOAD_BUCKET: z.string().optional(),
     S3_UPLOAD_REGION: z.string().optional(),
     S3_UPLOAD_ENDPOINT: z.string().optional(),
+    LOCAL_UPLOAD_PATH: z.string().optional(),
     NEXT_PUBLIC_ENABLE_RECEIPT_EXTRACT: z.preprocess(
       interpretEnvVarAsBool,
       z.boolean().default(false),
@@ -43,12 +44,13 @@ const envSchema = z
       (!env.S3_UPLOAD_BUCKET ||
         !env.S3_UPLOAD_KEY ||
         !env.S3_UPLOAD_REGION ||
-        !env.S3_UPLOAD_SECRET)
+        !env.S3_UPLOAD_SECRET) &&
+      !env.LOCAL_UPLOAD_PATH
     ) {
       ctx.addIssue({
         code: ZodIssueCode.custom,
         message:
-          'If NEXT_PUBLIC_ENABLE_EXPENSE_DOCUMENTS is specified, then S3_* must be specified too',
+          'If NEXT_PUBLIC_ENABLE_EXPENSE_DOCUMENTS is specified, either S3 settings or a LOCAL_UPLOAD_PATH should be specified too.',
       })
     }
     if (

@@ -33,6 +33,8 @@ import { getImageData, usePresignedUpload } from 'next-s3-upload'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { PropsWithChildren, ReactNode, useState } from 'react'
+import fs from 'fs'
+import path from 'path'
 
 type Props = {
   groupId: string
@@ -73,7 +75,19 @@ export function CreateFromReceiptButton({
       try {
         setPending(true)
         console.log('Uploading image…')
-        let { url } = await uploadToS3(file)
+        let url;
+        if (process.env.LOCAL_UPLOAD_PATH) { // if LOCAL_UPLOAD_PATH is set, upload to local file system
+          const [, extension] = file.name.match(/(\.[^\.]*)$/) ?? [null, '']
+          const timestamp = new Date().toISOString()
+          const random = randomId()
+          const fileName = `document-${timestamp}-${random}${extension.toLowerCase()}`
+          const filePath = path.join(process.env.LOCAL_UPLOAD_PATH, fileName);
+          fs.writeFileSync(filePath, file);
+          url = `local://${filePath}`;
+        } else { // otherwise, upload to S3
+          const uploadResult = await uploadToS3(file);
+          url = uploadResult.url;
+        }
         console.log('Extracting information from receipt…')
         const { amount, categoryId, date, title } =
           await extractExpenseInformationFromImage(url)

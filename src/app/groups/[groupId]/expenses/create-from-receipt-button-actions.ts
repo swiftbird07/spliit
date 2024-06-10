@@ -4,12 +4,30 @@ import { env } from '@/lib/env'
 import { formatCategoryForAIPrompt } from '@/lib/utils'
 import OpenAI from 'openai'
 import { ChatCompletionCreateParamsNonStreaming } from 'openai/resources/index.mjs'
+import fs from 'fs'
 
 const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY })
 
 export async function extractExpenseInformationFromImage(imageUrl: string) {
   'use server'
   const categories = await getCategories()
+
+  let file_id;
+
+  // Check if imageUrl indicates a local file
+  if (imageUrl.startsWith('local://')) {
+    const localFilePath = imageUrl.slice(7); // Remove the 'local://' prefix to get the actual file path
+    try {
+      const fileUploadResponse = await openai.files.create({
+        file: fs.createReadStream(localFilePath),
+        purpose: 'fine-tune'  // Change the purpose according to your actual requirement
+      });
+      file_id = fileUploadResponse.data.id; // Make sure to access the file id correctly depending on the response structure
+    } catch (error) {
+      console.error("Failed to upload file:", error);
+      throw new Error("File upload failed");
+    }
+  }
 
   const body: ChatCompletionCreateParamsNonStreaming = {
     model: 'gpt-4-vision-preview',
@@ -33,7 +51,7 @@ export async function extractExpenseInformationFromImage(imageUrl: string) {
       },
       {
         role: 'user',
-        content: [{ type: 'image_url', image_url: { url: imageUrl } }],
+        content: file_id ? [{ type: 'file', file_id }] : [{ type: 'image_url', url: imageUrl }],
       },
     ],
   }

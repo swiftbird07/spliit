@@ -22,6 +22,8 @@ import { Loader2, Plus, Trash, X } from 'lucide-react'
 import { getImageData, usePresignedUpload } from 'next-s3-upload'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
+import fs from 'fs'
+import path from 'path'
 
 type Props = {
   documents: ExpenseFormValues['documents']
@@ -52,14 +54,28 @@ export function ExpenseDocumentsInput({ documents, updateDocuments }: Props) {
         setPending(true)
         const { width, height } = await getImageData(file)
         if (!width || !height) throw new Error('Cannot get image dimensions')
-        const { url } = await uploadToS3(file)
+  
+        let url;
+        if (process.env.LOCAL_UPLOAD_PATH) { // if LOCAL_UPLOAD_PATH is set, upload to local file system
+          const [, extension] = file.name.match(/(\.[^\.]*)$/) ?? [null, '']
+          const timestamp = new Date().toISOString()
+          const random = randomId()
+          const fileName = `document-${timestamp}-${random}${extension.toLowerCase()}`
+          const filePath = path.join(process.env.LOCAL_UPLOAD_PATH, fileName);
+          fs.writeFileSync(filePath, file);
+          url = `local://${filePath}`;
+        } else { // otherwise, upload to S3
+          const uploadResult = await uploadToS3(file)
+          url = uploadResult.url
+        }
+  
         updateDocuments([...documents, { id: randomId(), url, width, height }])
       } catch (err) {
         console.error(err)
         toast({
           title: 'Error while uploading document',
           description:
-            'Something wrong happened when uploading the document. Please retry later or select a different file.',
+          'Something wrong happened when uploading the document. Please retry later or select a different file.',
           variant: 'destructive',
           action: (
             <ToastAction altText="Retry" onClick={() => upload()}>

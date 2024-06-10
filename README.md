@@ -61,7 +61,10 @@ If you want to contribute financially and help us keep the application free and 
 
 ### Expense documents
 
-Spliit offers users to upload images (to an AWS S3 bucket) and attach them to expenses. To enable this feature:
+Spliit offers users the ability to upload images and attach them to expenses. This feature can be enabled to use either S3 buckets (like Amazon S3) or local file storage for image uploads, depending on your setup preferences.
+To enable this feature, follow the instructions below.
+
+#### Configuring with S3 as storage
 
 - Follow the instructions in the _S3 bucket_ and _IAM user_ sections of [next-s3-upload](https://next-s3-upload.codingvalue.com/setup#s3-bucket) to create and set up an S3 bucket where images will be stored.
 - Update your environments variables with appropriate values:
@@ -80,6 +83,20 @@ You can also use other S3 providers by providing a custom endpoint:
 S3_UPLOAD_ENDPOINT=http://localhost:9000
 ```
 
+#### Configuring with local file storage
+
+If you prefer to store images locally, you can enable this feature by setting the following environment variable:
+
+```.env
+LOCAL_UPLOAD_PATH=/path/to/your/local/storage
+```
+
+If you use the docker container, don't forget to mount the local volume to a directory in the container:
+
+```bash
+docker run -v /path/to/your/local/storage:/app/public/uploads spliit2 # here LOCAL_UPLOAD_PATH=/app/public/uploads
+```
+
 ### Create expense from receipt
 
 You can offer users to create expense by uploading a receipt. This feature relies on [OpenAI GPT-4 with Vision](https://platform.openai.com/docs/guides/vision) and a public S3 storage endpoint.
@@ -94,6 +111,8 @@ To enable the feature:
 NEXT_PUBLIC_ENABLE_RECEIPT_EXTRACT=true
 OPENAI_API_KEY=XXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ```
+
+*Note: If you use local file storage, each receipt image will need to be uploaded to OpenAI before scanning, which might add a delay and increase token usage.*
 
 ### Deduce category from title
 

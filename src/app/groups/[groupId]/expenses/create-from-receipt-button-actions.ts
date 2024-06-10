@@ -20,9 +20,9 @@ export async function extractExpenseInformationFromImage(imageUrl: string) {
     try {
       const fileUploadResponse = await openai.files.create({
         file: fs.createReadStream(localFilePath),
-        purpose: 'fine-tune'  // Change the purpose according to your actual requirement
+        purpose: 'chat completion', // should be 'chat completion' according to the docs
       });
-      file_id = fileUploadResponse.data.id; // Make sure to access the file id correctly depending on the response structure
+      file_id = fileUploadResponse.data.id; // Not tested yet so not sure if this is the "correct" way to get the file_id
     } catch (error) {
       console.error("Failed to upload file:", error);
       throw new Error("File upload failed");
@@ -51,7 +51,7 @@ export async function extractExpenseInformationFromImage(imageUrl: string) {
       },
       {
         role: 'user',
-        content: file_id ? [{ type: 'file', file_id }] : [{ type: 'image_url', url: imageUrl }],
+        content: file_id ? [{ type: 'file', file_id }] : [{ type: 'image_url', url: imageUrl }], // Use the file_id if it was uploaded
       },
     ],
   }

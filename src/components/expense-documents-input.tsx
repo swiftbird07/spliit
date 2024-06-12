@@ -62,7 +62,11 @@ export function ExpenseDocumentsInput({ documents, updateDocuments }: Props) {
           const random = randomId()
           const fileName = `document-${timestamp}-${random}${extension.toLowerCase()}`
           const filePath = path.join(process.env.LOCAL_UPLOAD_PATH, fileName);
-          fs.writeFileSync(filePath, file);
+          
+          const fileBuffer = await file.arrayBuffer();  // Convert file to ArrayBuffer
+          const buffer = Buffer.from(fileBuffer); 
+          fs.writeFileSync(filePath, buffer);  // Write the Buffer to file system
+
           url = `local://${filePath}`;
         } else { // otherwise, upload to S3
           const uploadResult = await uploadToS3(file)
@@ -138,6 +142,9 @@ export function DocumentThumbnail({
   const [open, setOpen] = useState(false)
   const [api, setApi] = useState<CarouselApi>()
   const [currentDocument, setCurrentDocument] = useState<number | null>(null)
+  const modifiedUrl = document.url.startsWith('local://')
+    ? `/api/images/${document.url.slice(8)}` 
+    : document.url;
 
   useEffect(() => {
     if (!api) return
@@ -161,7 +168,7 @@ export function DocumentThumbnail({
             width={300}
             height={300}
             className="object-contain"
-            src={document.url}
+            src={modifiedUrl}
             alt=""
           />
         </Button>
@@ -202,7 +209,7 @@ export function DocumentThumbnail({
                 <CarouselItem key={index}>
                   <Image
                     className="object-contain w-[calc(100vw-32px)] h-[calc(100dvh-32px-40px-16px-48px)] sm:w-[calc(100vw-32px-32px)] sm:h-[calc(100dvh-32px-40px-16px-32px-48px)]"
-                    src={document.url}
+                    src={modifiedUrl}
                     width={document.width}
                     height={document.height}
                     alt=""
